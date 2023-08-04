@@ -1,0 +1,4 @@
+
+* Defcapture
+
+A convenience macro for defining org capture templates using doct.
