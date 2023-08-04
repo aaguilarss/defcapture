@@ -3,8 +3,12 @@
 ;; Copyright (C) 2023  Abraham Aguilar
 
 ;; Author: Abraham Aguilar <a.aguilar@ciencias.unam.mx>
-;; Keywords: tools, convenience, macro, org-capture
-
+;; URL: https://github.com/aggu4/defcapture
+;; Keywords: convenience org
+;; Description: A defun analog for org-capture templates
+;; Version: 0.1
+;; Package-Requires: ((emacs "25.1") (doct "3.0") (org "9.4"))
+;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -26,8 +30,6 @@
 ;; capture templates.
 ;;
 ;; Example of usage:
-;;
-;;
 ;;
 ;; (defcapture parent () "Parent Capture"
 ;;  :keys "p"
@@ -74,7 +76,7 @@
 (defvar defcapture--capture-namespace (make-hash-table))
 
 (defun defcapture--capture-boundp (name)
-  "Return t if NAME is bound to a capture and nil if it isn't"
+  "Return t if NAME is bound to a capture and nil if it isn't."
   (if (and (gethash name defcapture--capture-namespace) t)
       t
     (progn
@@ -82,8 +84,8 @@
       nil)))
 
 (defun defcapture--compute-children (name)
-  "Search the defcapture--capture-namespace for the children of the capture NAME.
-   Return them as a list."
+  "Search the `defcapture--capture-namespace' for the children of the capture NAME.
+Return them as a list."
   (cl-loop for k being each hash-key of defcapture--capture-namespace
            using (hash-value v)
            appending
@@ -105,7 +107,7 @@
 
 
 (defun defcapture--sync-org-captures ()
-  "Sync the captures in defcapture--capture-namespace with org-capture-templastes."
+  "Sync the captures in `defcapture--capture-namespace' with `org-capture-templates'."
   (setq org-capture-templates
         (doct (cl-loop for name being each hash-key of defcapture--capture-namespace
                        using (hash-value capture)
@@ -117,8 +119,8 @@
 ;;;###autoload
 (cl-defmacro defcapture (name (&rest parents) desc &body body)
   "Define a capture NAME and, optionally, add it to the children of PARENTS.
-   DESC must be a string. BODY is the capture template's declarations in doct
-   style. After binding NAME to the capture, update org captures."
+DESC must be a string. BODY is the capture template's declarations in doct
+style. After binding NAME to the capture, update org captures."
   `(if (cl-every (lambda (x) (and x t))
                  (mapcar #'defcapture--capture-boundp ',parents))
      (progn
@@ -135,8 +137,8 @@
 
 ;;;###autoload
 (defun defcapture-generate-defcapture (name)
-  "Return capture NAME's definition if NAME is defcapture--capture-boundp.
-  Otherwise return nil."
+  "Return capture NAME's definition if NAME is `defcapture--capture-boundp'.
+Otherwise return nil."
   (when (defcapture--capture-boundp name)
     (let ((capture (gethash name defcapture--capture-namespace)))
       `(defcapture ,name (,@(defcapture--capture-parents capture))
@@ -144,18 +146,13 @@
 
 ;;;###autoload
 (defmacro defcapture-remove-capture (name)
-  "Remove the capture NAME if NAME is defcapture--capture-boundp.
-  Then, sync org-capture-templates. Return nil if NAME is not
-  defcapture--capture-boundp."
+  "Remove the capture NAME if NAME is `defcapture--capture-boundp'.
+Then, sync `org-capture-templates'. Return nil if NAME is not
+`defcapture--capture-boundp'."
   `(when (defcapture--capture-boundp ,name)
      (remhash ,name defcapture--capture-namespace)
      (defcapture--sync-org-captures)))
 
-;;;###autoload
-(defun defcapture-list-captures ()
-   "List all defined captures."
-   (cl-loop for k being each hash-key of defcapture--capture-namespace
-            collecting k))
 
 (provide 'defcapture)
 ;;; defcapture.el ends here
