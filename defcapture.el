@@ -128,14 +128,10 @@
                 :is-child ,(and parents t)
                 :declaration ',(cons desc body))
                defcapture--capture-namespace)
-       (message "so far so good")
        (defcapture--sync-org-captures))
      (progn
        (message "The parent %s is not defined."
         (cl-find-if #'defcapture--capture-boundp ',parents)))))
-
-(cl-defmacro defidefi (name)
-  `',name)
 
 ;;;###autoload
 (defun defcapture-generate-defcapture (name)

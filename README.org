@@ -1,4 +1,85 @@
 
 * Defcapture
 
-A convenience macro for defining org capture templates using doct.
+Defcapture is a macro that serves as a ~defun~ analogue for defining[[https://orgmode.org/manual/Capture-templates.html][ org-capture]] templates. If you are familiar with Emacs Lisp and org-capture, you might already know how valuable org-capture is for capturing and organizing information efficiently. Defcapture takes this a step further, providing a dedicated namespace for org-capture templates and simplifying the process of defining them. Defcapture uses the [[https://github.com/progfolio/doct][Doct DSL]] (Declarative Org Capture Template DSL), allowing you to create more complex capture templates with ease.
+
+
+For example, the following declaration (from [[https://github.com/progfolio/doct][Doct's TL;DR]]):
+
+#+begin_src emacs-lisp
+(defun my-org-template-hook ()
+  (when (string= (org-capture-get :key t) "p1")
+    (message "\"First Child\" selected.")))
+
+(add-hook 'org-capture-mode-hook 'my-org-template-hook)
+
+(setq org-capture-templates
+      '(("p" "Parent")
+        ("p1" "First Child"  entry (file+headline "~/example.org" "One")
+         "* TODO %^{Description} \n:PROPERTIES:\n:Created: %U\n:END:\n%?"
+         :prepend t)
+        ("p2" "Second Child" entry (file+headline "~/example.org" "Two")
+         "* NEXT %^{Description} \n:PROPERTIES:\n:Created: %U\n:END:\n%?"
+         :prepend t)
+        ("p3" "Third Child"  entry (file+headline "~/example.org" "Three")
+         "* MAYBE %^{Description} \n:PROPERTIES:\n:Created: %U\n:END:\n%?"
+         :prepend t)))
+
+#+end_src
+
+becomes
+
+#+begin_src emacs-lisp
+
+(defcapture parent () "Parent"
+  :keys "p"
+  :file "~/example.org"
+  :prepend t
+  :template ("* %{todo-state} %^{Description}"
+             ":PROPERTIES:"
+             ":Created: %U"
+             ":END:"
+             "%?"))
+
+(defcapture child1 (parent) "First Child"
+  :keys "1"
+  :headline "One"
+  :todo-state "TODO"
+  :hook (lambda () (message "\"First Child\“ selected.")))
+
+(defcapture child2 (parent) "Second Child"
+  :keys "2"
+  :headline "Two"
+  :todo-state "NEXT")
+
+(defcapture child3 (parent) "Third Child"
+  :keys "3"
+  :headline "Three"
+  :todo-state "MAYBE")
+
+#+end_src
+
+
+which mimics the familiar ~defun~ syntax, making it easier to create, read and edit ~org-capture~ templates.
+
+** Installation
+
+To start using Defcapture, simply copy the defcapture.el file into your Emacs configuration or load it through your preferred package manager.
+
+
+** Usage
+
+To define an ~org-capture~ template with ~defcapture~ use the following syntax:
+
+#+begin_src emacs-lisp
+
+(defcapture NAME (PARENTS) DESCRIPTION &body BODY)
+
+#+end_src
+
+Where:
+
+- *NAME*: The name of the capture template. A symbol that will be used for identification and reference.
+- *PARENTS*: The parent (or parents) of this capture if it is the child of another capture template.
+- *DESCRIPTION*: The description of the capture template. It's a string that will be used when ~org-capture~ is called.
+- *BODY*: The rest of the capture template declaration in [[https://github.com/progfolio/doct][DOCT]] style.
