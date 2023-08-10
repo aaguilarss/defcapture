@@ -6,7 +6,7 @@
 ;; URL: https://github.com/aggu4/defcapture
 ;; Keywords: convenience org
 ;; Description: A defun analog for org-capture templates
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "25.1") (doct "3.0") (org "9.4"))
 ;;
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 
 ;; This is a simple convenience macro for defining org capture templates.
 ;; It uses the Doct DSL for declarations. It has a dedicated namespace
-;; for capture templates and provides convenient functions to remove
+;; for capture templates and provides convenient functions to manage
 ;; capture templates.
 ;;
 ;; Example of usage:
@@ -52,85 +52,77 @@
 ;;   :headline "Two"
 ;;   :todo-state "NEXT")
 ;;
-;; (defcapture childc ("Parent") "Third Child"
+;; (defcapture childc (parent) "Third Child"
 ;;   :keys "c"
 ;;   :headline "Three"
 ;;   :todo-state "MAYBE")
 
 ;;; Code:
 
-(require 'org)
+(require 'org-capture)
 (require 'doct)
 (require 'cl-lib)
 
-;; A structure for captures
-;; PARENTS is a list of strings which are the names of the capture's parents.
-;; IS-CHILD is t if the capture is a child of another and nil if it isn't.
-;; DECLARATION is the declaration of the capture in doct.
 (cl-defstruct defcapture--capture
+  "A structure for captures. PARENTS is a list of symbols which are the.
+names of the capture's parents. Declaration is the declaration of the
+capture in Doct DSL."
   parents
-  is-child
   declaration)
 
-;; The capture namespace.
-(defvar defcapture--capture-namespace (make-hash-table))
+(defvar defcapture--capture-namespace (make-hash-table)
+  "The variable that holds the namespace for capture templates.")
 
 (defun defcapture--capture-boundp (name)
   "Return t if NAME is bound to a capture and nil if it isn't."
-  (if (and (gethash name defcapture--capture-namespace) t)
-      t
-    (progn
-      (message "The capture %s isn't defined" name)
-      nil)))
+  (or (and (gethash name defcapture--capture-namespace) t)
+      (and (message "The capture %s isn't defined" name) nil)))
 
-(defun defcapture--compute-children (name)
-  "Search the `defcapture--capture-namespace' for the children of the capture NAME.
-Return them as a list."
+
+(defun defcapture--children (name)
+  "List the children of capture NAME."
   (cl-loop for k being each hash-key of defcapture--capture-namespace
            using (hash-value v)
            appending
-           (when (cl-member name (defcapture--capture-parents v) :test #'equal)
+           (when (cl-member name (defcapture--capture-parents v))
              (list k))))
 
-
-(defun defcapture--make-declaration (name)
-  "Return the declaration for defcapture--capture NAME collecting it's children."
+(defun defcapture--declaration (name)
+  "Return the declaration for `defcapture--capture' NAME collecting it's children."
   (let ((children (defcapture--compute-children name)))
     (if children
         (append (defcapture--capture-declaration
-                  (gethash name defcapture--capture-namespace))
+                 (gethash name defcapture--capture-namespace))
                 (list
-                 :children (mapcar #'defcapture--make-declaration
+                 :children (mapcar #'defcapture--declaration
                                    children)))
       (defcapture--capture-declaration
         (gethash name defcapture--capture-namespace)))))
 
 
-(defun defcapture--sync-org-captures ()
-  "Sync the captures in `defcapture--capture-namespace' with `org-capture-templates'."
+;;;###autoload
+(defun defcapture-sync-captures ()
+  "Sync the captures in defcapture's namespace with `org-capture-templates'."
   (setq org-capture-templates
         (doct (cl-loop for name being each hash-key of defcapture--capture-namespace
                        using (hash-value capture)
                        appending
-                       (unless (defcapture--capture-is-child capture)
-                         (list (defcapture--make-declaration name)))))))
+                       (unless (defcapture--capture-parents capture)
+                         (list (defcapture--declaration name)))))))
 
 
 ;;;###autoload
 (cl-defmacro defcapture (name (&rest parents) desc &body body)
-  "Define a capture NAME and, optionally, add it to the children of PARENTS.
-DESC must be a string. BODY is the capture template's declarations in doct
-style. After binding NAME to the capture, update org captures."
+  "Define a capture NAME and, optionally, declare it's PARENTS.
+DESC must be a string. BODY is the capture template's declarations in
+doct style."
   `(if (cl-every (lambda (x) (and x t))
                  (mapcar #'defcapture--capture-boundp ',parents))
-     (progn
        (puthash ',name
-               (make-defcapture--capture
-                :parents ',parents
-                :is-child ,(and parents t)
-                :declaration ',(cons desc body))
-               defcapture--capture-namespace)
-       (defcapture--sync-org-captures))
+                (make-defcapture--capture
+                 :parents ',parents
+                 :declaration ',(cons desc body))
+                defcapture--capture-namespace)
      (progn
        (message "The parent %s is not defined."
         (cl-find-if #'defcapture--capture-boundp ',parents)))))
@@ -150,8 +142,7 @@ Otherwise return nil."
 Then, sync `org-capture-templates'. Return nil if NAME is not
 `defcapture--capture-boundp'."
   `(when (defcapture--capture-boundp ,name)
-     (remhash ,name defcapture--capture-namespace)
-     (defcapture--sync-org-captures)))
+     (remhash ,name defcapture--capture-namespace)))
 
 
 (provide 'defcapture)
