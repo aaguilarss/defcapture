@@ -89,7 +89,7 @@ capture in Doct DSL."
 
 (defun defcapture--declaration (name)
   "Return the declaration for `defcapture--capture' NAME collecting it's children."
-  (let ((children (defcapture--compute-children name)))
+  (let ((children (defcapture--children name)))
     (if children
         (append (defcapture--capture-declaration
                  (gethash name defcapture--capture-namespace))
