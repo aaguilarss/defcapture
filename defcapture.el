@@ -93,8 +93,8 @@ capture in Doct DSL."
         (append (defcapture--capture-declaration
                  (gethash name defcapture--capture-namespace))
                 (list
-                 :children (mapcar #'defcapture--declaration
-                                   children)))
+                 :children (mapc #'defcapture--declaration
+                                 children)))
       (defcapture--capture-declaration
         (gethash name defcapture--capture-namespace)))))
 
@@ -115,7 +115,7 @@ capture in Doct DSL."
 DESC must be a string. BODY is the capture template's declarations in
 doct style."
   `(if (cl-every (lambda (x) (and x t))
-                 (mapcar #'defcapture--capture-boundp ',parents))
+                 (mapc #'defcapture--capture-boundp ',parents))
        (puthash ',name
                 (make-defcapture--capture
                  :parents ',parents
@@ -139,7 +139,7 @@ Otherwise return nil."
 (defun defcapture-remove-capture (name)
   "Remove the capture NAME and it's children recursively."
   (when (defcapture--capture-boundp name)
-    (mapcar #'defcapture-remove-capture (defcapture--children name))
+    (mapc #'defcapture-remove-capture (defcapture--children name))
     (remhash name defcapture--capture-namespace)))
 
 
