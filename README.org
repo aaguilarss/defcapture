@@ -57,7 +57,7 @@ becomes
   :todo-state "MAYBE")
 
 
-(defcapture-sync-captures)
+(setq org-capture-templates (defcapture-captures))
 #+end_src
 
 
@@ -85,7 +85,7 @@ Where:
 - *DESCRIPTION*: The description of the capture template. It's a string that will be used when ~org-capture~ is called.
 - *BODY*: The rest of the capture template declaration in [[https://github.com/progfolio/doct][DOCT]] style.
 
-  After you finished declaring all your captures, call the function ~defcapture-sync-captures~ to install the captures in defcapture's namespace to the ~org-capture-templates~ variable:
+  After you finished declaring all your captures, call the function ~defcapture-captures~ to install the captures in defcapture's namespace to the ~org-capture-templates~ variable:
 
 
 #+begin_src emacs-lisp
@@ -95,5 +95,5 @@ Where:
 
 (defcapture ...)
 
-(defcapture-sync-captures)
+(setq org-capture-templates (defcapture-captures))
 #+end_src

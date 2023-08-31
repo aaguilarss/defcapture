@@ -7,7 +7,7 @@
 ;; Keywords: convenience org
 ;; Description: A defun analog for org-capture templates
 ;; Version: 0.2
-;; Package-Requires: ((emacs "25.1") (doct "3.0") (org "9.4"))
+;; Package-Requires: ((emacs "25.1") (doct "3.0"))
 ;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -59,7 +59,6 @@
 
 ;;; Code:
 
-(require 'org-capture)
 (require 'doct)
 (require 'cl-lib)
 
@@ -101,14 +100,13 @@ capture in Doct DSL."
 
 
 ;;;###autoload
-(defun defcapture-sync-captures ()
+(defun defcapture-captures ()
   "Sync the captures in defcapture's namespace with `org-capture-templates'."
-  (setq org-capture-templates
-        (doct (cl-loop for name being each hash-key of defcapture--capture-namespace
-                       using (hash-value capture)
-                       appending
-                       (unless (defcapture--capture-parents capture)
-                         (list (defcapture--declaration name)))))))
+  (doct (cl-loop for name being each hash-key of defcapture--capture-namespace
+                 using (hash-value capture)
+                 appending
+                 (unless (defcapture--capture-parents capture)
+                   (list (defcapture--declaration name))))))
 
 
 ;;;###autoload
@@ -136,13 +134,14 @@ Otherwise return nil."
       `(defcapture ,name (,@(defcapture--capture-parents capture))
          ,@(defcapture--capture-declaration capture)))))
 
+
 ;;;###autoload
-(defmacro defcapture-remove-capture (name)
-  "Remove the capture NAME if NAME is `defcapture--capture-boundp'.
-Then, sync `org-capture-templates'. Return nil if NAME is not
-`defcapture--capture-boundp'."
-  `(when (defcapture--capture-boundp ,name)
-     (remhash ,name defcapture--capture-namespace)))
+(defun defcapture-remove-capture (name)
+  "Remove the capture NAME and it's children recursively."
+  (when (defcapture--capture-boundp name)
+    (mapcar #'defcapture-remove-capture (defcapture--children name))
+    (remhash name defcapture--capture-namespace)))
+
 
 
 (provide 'defcapture)
