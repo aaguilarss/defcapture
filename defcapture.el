@@ -114,6 +114,7 @@ capture in Doct DSL."
   "Define a capture NAME and, optionally, declare it's PARENTS.
 DESC must be a string. BODY is the capture template's declarations in
 doct style."
+  (declare (indent defun))
   `(if (cl-every (lambda (x) (and x t))
                  (mapc #'defcapture--capture-boundp ',parents))
        (puthash ',name
